@@ -38,3 +38,6 @@ site/
 
 # OS
 .DS_Store
+
+# Private keys
+*.pem
