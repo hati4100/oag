@@ -269,14 +269,18 @@ defaults:
       deny_patterns:
         - sustained_elevation
         - crescendo
+        - saw_tooth_probing
+        - periodic_testing
 ```
 
 | Pattern | Detects |
 |---|---|
 | `sustained_elevation` | All scores in the window above threshold (persistent low-grade probing) |
 | `crescendo` | Strictly increasing scores across the window (gradual escalation) |
+| `saw_tooth_probing` | Scores alternating above and below threshold (attacker probing threshold boundaries) |
+| `periodic_testing` | High injection scores appearing at regular turn intervals (fixed-cadence probing) |
 
-When an escalation pattern is detected, the current request's injection score is boosted by 1.5x. If the boosted score exceeds `deny_threshold`, the request is denied with `injection_detected` and `injection_escalating: true` in the audit.
+When an escalation pattern is detected, the current request's injection score is boosted by 1.5x. If the boosted score exceeds `deny_threshold`, the request is denied with `injection_escalation_detected` and `injection_escalating: true` in the audit. When the base score alone (without escalation boost) exceeds the threshold, the reason code remains `injection_detected`.
 
 Audit fields: `injection_escalating`, `escalation_pattern`, `escalation_window_scores`, `escalation_window_size`.
 
@@ -383,6 +387,63 @@ defaults:
 
 Audit field: `content_inspection.external_judge` with `score`, `decision`, `source`, `latency_ms`, `reason`, `error`.
 
+## Code Security Analysis
+
+Scan LLM-generated code in responses for common vulnerability patterns. Operates on response bodies via the plugin detection pipeline.
+
+Register the bundled detector and enable response scanning:
+
+```bash
+oag run --policy policy.yaml \
+  --plugin-provider com.mustafadakhel.oag.inspection.content.CodeSecurityDetectorProvider
+```
+
+```yaml
+defaults:
+  plugin_detection:
+    enabled: true
+    scan_responses: true
+```
+
+### Code Extraction
+
+OAG extracts code blocks from response bodies using two strategies:
+
+- **Markdown fences** — `` ```lang ... ``` `` blocks with optional language tags
+- **JSON tool calls** — `code` fields from OpenAI/Anthropic tool_call response formats
+
+Extracted blocks are scanned up to 524 KB per response body.
+
+### Vulnerability Rules
+
+| Rule ID | CWE | Severity | Description |
+|---|---|---|---|
+| `sql_fstring` | CWE-89 | HIGH | Python f-string used in SQL query |
+| `sql_concat_execute` | CWE-89 | HIGH | String concatenation in SQL execute call |
+| `cmd_shell_true` | CWE-78 | HIGH | subprocess call with `shell=True` |
+| `cmd_os_system` | CWE-78 | HIGH | `os.system()` call |
+| `cmd_eval_exec` | CWE-78 | HIGH | `eval()` or `exec()` call |
+| `deser_pickle` | CWE-502 | HIGH | Insecure pickle deserialization |
+| `deser_yaml_unsafe` | CWE-502 | HIGH | `yaml.load()` without SafeLoader |
+| `crypto_md5` | CWE-327 | MEDIUM | Weak MD5 hash usage |
+| `secret_assignment` | CWE-798 | HIGH | Hardcoded secret in variable assignment |
+
+The `deser_yaml_unsafe` rule is context-aware — a code block is only flagged if any `yaml.load()` call lacks `SafeLoader` or `safe_load` on its line.
+
+### Performance
+
+- **Time budget**: 50 ms per response (configurable). Scanning stops when the budget is exhausted.
+- **ReDoS protection**: All regex patterns are validated against adversarial input at construction time.
+
+### Audit
+
+Findings surface in audit events via existing plugin infrastructure:
+
+- `response_plugin_detector_ids: ["code-security"]`
+- `response_plugin_finding_count: <N>`
+
+Each finding includes evidence: `pattern` (rule ID), `cwe`, `code_block_source` (`markdown_fence` or `json_tool_call`), and `language` (when detected).
+
 ## Session Tracking
 
 When `--session` is set, OAG tracks per-session state:
@@ -448,6 +509,7 @@ All reason codes emitted by OAG:
 | `url_exfiltration_blocked` | High-entropy or Base64 data in URL query parameters |
 | `dns_exfiltration_blocked` | High-entropy subdomain label |
 | `injection_detected` | Injection pattern matched in request body |
+| `injection_escalation_detected` | Escalation boost caused injection denial (base score alone would not have denied) |
 | `response_injection_detected` | Injection pattern found in response body |
 | `data_budget_exceeded` | Per-host session byte budget exceeded |
 | `circuit_open` | Circuit breaker is open for this host |
